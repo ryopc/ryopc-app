@@ -1,0 +1,57 @@
+name: Build Android App
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Set up Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+
+    - name: Install Dependencies
+      run: |
+        npm install @capacitor/core @capacitor/cli
+        npm install @capacitor/android
+        npm install @capacitor/assets --save-dev
+
+    - name: Initialize Capacitor
+      run: npx cap init "ryopc app" "com.ryopc.app" --web-dir=www
+
+    - name: Add Android Platform
+      run: npx cap add android
+
+    - name: Generate Icons from Repository
+      run: |
+        mkdir -p assets
+        cp icon.png assets/icon-only.png
+        cp icon.png assets/splash-only.png
+        npx capacitor-assets generate --android
+
+    - name: Sync Code
+      run: npx cap sync
+
+    - name: Build Android APK
+      run: |
+        cd android
+        ./gradlew assembleDebug
+
+    - name: Rename APK File # 💡 ここでファイル名を ryopc-app.apk に変更しています
+      run: |
+        mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/ryopc-app.apk
+
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ryopc-app # 💡 ダウンロード時のフォルダ名
+        path: android/app/build/outputs/apk/debug/ryopc-app.apk # 💡 変更後のファイルパスを指定
