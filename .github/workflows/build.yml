@@ -17,13 +17,13 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '21' # 💡 Java 17 から 21 に修正しました
+        java-version: '21'
 
     - name: Install Dependencies
       run: |
         npm install @capacitor/core @capacitor/cli
         npm install @capacitor/android
-        npm install @capacitor/assets --save-dev
+        npm install -g cordova-res --unsafe-perm
 
     - name: Initialize Capacitor
       run: npx cap init "ryopc app" "com.ryopc.app" --web-dir=www
@@ -31,12 +31,12 @@ jobs:
     - name: Add Android Platform
       run: npx cap add android
 
-    - name: Generate Icons from Repository
+    - name: Generate Icons and Splash
       run: |
-        mkdir -p assets
-        cp icon.png assets/icon-only.png
-        cp icon.png assets/splash-only.png
-        npx capacitor-assets generate --android
+        mkdir -p resources/android
+        cp icon.png resources/icon.png
+        cp icon.png resources/splash.png
+        cordova-res android --skip-config --copy
 
     - name: Sync Code
       run: npx cap sync
