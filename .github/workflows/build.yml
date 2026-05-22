@@ -17,7 +17,7 @@ jobs:
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
-        java-version: '17'
+        java-version: '21' # 💡 Java 17 から 21 に修正しました
 
     - name: Install Dependencies
       run: |
@@ -46,12 +46,12 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    - name: Rename APK File # 💡 ここでファイル名を ryopc-app.apk に変更しています
+    - name: Rename APK File
       run: |
         mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/ryopc-app.apk
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ryopc-app # 💡 ダウンロード時のフォルダ名
-        path: android/app/build/outputs/apk/debug/ryopc-app.apk # 💡 変更後のファイルパスを指定
+        name: ryopc-app
+        path: android/app/build/outputs/apk/debug/ryopc-app.apk
