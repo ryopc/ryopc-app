@@ -24,6 +24,11 @@ jobs:
         npm install @capacitor/core @capacitor/cli
         npm install @capacitor/android
 
+    - name: Create Web Directory (Required for Capacitor)
+      run: |
+        mkdir -p www
+        echo '<!DOCTYPE html><html><head><title>ryopc app</title></head><body><h1>Hello World</h1></body></html>' > www/index.html
+
     - name: Initialize Capacitor
       run: npx cap init "ryopc app" "com.ryopc.app" --web-dir=www
 
@@ -32,7 +37,19 @@ jobs:
 
     - name: Set App Icon Safely
       run: |
-        # 💡 エラーの原因になる外部ツールを使わず、画像をAndroidの標準アイコンとして強制上書きします
+        # アイコン画像が存在しない場合のフォールバック（検証用プレースホルダー）
+        if [ ! -f icon.png ]; then
+          echo "icon.png not found, creating a dummy one"
+          convert -size 512x512 xc:blue icon.png || touch icon.png
+        fi
+        
+        # ディレクトリを作成してアイコンをコピー
+        mkdir -p android/app/src/main/res/mipmap-mdpi
+        mkdir -p android/app/src/main/res/mipmap-hdpi
+        mkdir -p android/app/src/main/res/mipmap-xhdpi
+        mkdir -p android/app/src/main/res/mipmap-xxhdpi
+        mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+        
         cp icon.png android/app/src/main/res/mipmap-mdpi/ic_launcher.png
         cp icon.png android/app/src/main/res/mipmap-hdpi/ic_launcher.png
         cp icon.png android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
@@ -46,6 +63,9 @@ jobs:
 
     - name: Sync Code
       run: npx cap sync
+
+    - name: Grant Execute Permission for Gradlew
+      run: chmod +x android/gradlew
 
     - name: Build Android APK
       run: |
