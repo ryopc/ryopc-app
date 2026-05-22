@@ -31,12 +31,11 @@ jobs:
     - name: Add Android Platform
       run: npx cap add android
 
-    - name: Generate Icons and Splash
+    - name: Generate Icons Only
       run: |
-        mkdir -p resources/android
+        mkdir -p resources
         cp icon.png resources/icon.png
-        cp icon.png resources/splash.png
-        cordova-res android --skip-config --copy
+        cordova-res android --type icon --skip-config --copy
 
     - name: Sync Code
       run: npx cap sync
