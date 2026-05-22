@@ -12,12 +12,14 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
+        cache: 'npm'
 
     - name: Set up Java
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '21'
+        cache: 'gradle'
 
     - name: Install Dependencies
       run: |
@@ -35,15 +37,40 @@ jobs:
     - name: Add Android Platform
       run: npx cap add android
 
+    - name: Fix Duplicate Kotlin Standard Library Conflict
+      run: |
+        # 【最重要】一番大元のビルド設定ファイルに、競合を解決する設定を強制的に書き込みます
+        ROOT_GRADLE="android/build.gradle"
+        if [ -f "$ROOT_GRADLE" ]; then
+          echo "Applying Kotlin-stdlib conflict fix to $ROOT_GRADLE"
+          cat << 'EOF' >> $ROOT_GRADLE
+
+          subprojects {
+              subprojects {
+                  configurations.all {
+                      resolutionStrategy {
+                          exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk7"
+                          exclude group: "org.jetbrains.kotlin", module: "kotlin-stdlib-jdk8"
+                      }
+                  }
+              }
+          }
+        EOF
+        else
+          echo "Warning: $ROOT_GRADLE not found."
+        fi
+
     - name: Set App Icon Safely
       run: |
-        # アイコン画像が存在しない場合のフォールバック（検証用プレースホルダー）
         if [ ! -f icon.png ]; then
-          echo "icon.png not found, creating a dummy one"
-          convert -size 512x512 xc:blue icon.png || touch icon.png
+          echo "icon.png not found, creating a safe dummy png via Node.js"
+          node -e "
+            const fs = require('fs');
+            const buf = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=', 'base64');
+            fs.writeFileSync('icon.png', buf);
+          "
         fi
         
-        # ディレクトリを作成してアイコンをコピー
         mkdir -p android/app/src/main/res/mipmap-mdpi
         mkdir -p android/app/src/main/res/mipmap-hdpi
         mkdir -p android/app/src/main/res/mipmap-xhdpi
@@ -72,9 +99,15 @@ jobs:
         cd android
         ./gradlew assembleDebug
 
-    - name: Rename APK File
+    - name: Rename APK File Safely
       run: |
-        mv android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/ryopc-app.apk
+        APK_DIR="android/app/build/outputs/apk/debug"
+        if [ -f "$APK_DIR/app-debug.apk" ]; then
+          mv "$APK_DIR/app-debug.apk" "$APK_DIR/ryopc-app.apk"
+        else
+          echo "Warning: app-debug.apk not found, searching for any debug apk..."
+          find "$APK_DIR" -name "*.apk" -exec mv {} "$APK_DIR/ryopc-app.apk" \;
+        fi
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
