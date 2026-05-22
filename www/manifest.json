@@ -1,0 +1,21 @@
+{
+  "name": "ryopc app",
+  "short_name": "ryopc app",
+  "description": "ryopc app application",
+  "icons": [
+    {
+      "src": "../icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "lang": "ja",
+  "dir": "ltr",
+  "scope": "./",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "prefer_related_applications": false
+}
