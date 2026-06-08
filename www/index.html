@@ -394,14 +394,149 @@
 
     <div class="container" id="contentContainer">
         
-        <!-- PWA ホーム画面追加バナー -->
-        <div class="pwa-install-banner" id="pwaBanner">
-            <div>
-                <h4 data-t="pwa_title">ホーム画面に追加</h4>
-                <p data-t="pwa_subtitle">ryopcアプリをすばやく起動</p>
-            </div>
-            <button class="pwa-install-btn" id="pwaInstallBtn" data-t="pwa_add">追加</button>
-        </div>
+       <!-- ==========================================
+  1. 画面に表示するパーツ（HTML）
+=========================================== -->
+
+<!-- 【Android / PC用】カスタムインストールボタン -->
+<button id="pwaInstallBtn" class="pwa-btn" style="display: none;">
+  アプリをインストールする
+</button>
+
+<!-- 【iPhone用】インストールの案内ポップアップ -->
+<div id="iosInstallGuide" class="ios-guide" style="display: none;">
+  <p class="ios-guide-title">📱 ホーム画面に追加してアプリとして使う</p>
+  <p class="ios-guide-text">
+    1. ブラウザの下にある<strong>「共有ボタン（四角から矢印が出るマーク）」</strong>をタップします。<br>
+    2. メニューから<strong>「ホーム画面に追加」</strong>を選んでください。
+  </p>
+  <button id="iosGuideCloseBtn" class="ios-guide-close">閉じる</button>
+</div>
+
+
+<!-- ==========================================
+  2. 見た目を整える（CSS）
+=========================================== -->
+<style>
+  /* Android/PC用ボタンのデザイン */
+  .pwa-btn {
+    display: block;
+    margin: 20px auto;
+    padding: 12px 24px;
+    background-color: #007aff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  }
+
+  /* iPhone用ポップアップのデザイン（画面下に固定） */
+  .ios-guide {
+    position: fixed;
+    bottom: 20px;
+    left: 5%;
+    width: 90%;
+    max-width: 400px;
+    background-color: #ffffff;
+    border: 1px solid #e5e5ea;
+    border-radius: 13px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    padding: 16px;
+    z-index: 9999;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  @media (min-width: 450px) {
+    .ios-guide { left: 50%; transform: translateX(-50%); } /* PC等で見た時用の中央寄せ */
+  }
+  .ios-guide-title {
+    margin: 0 0 8px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: #000;
+    text-align: center;
+  }
+  .ios-guide-text {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    color: #3a3a3c;
+    line-height: 1.5;
+  }
+  .ios-guide-close {
+    width: 100%;
+    padding: 8px;
+    background-color: #f2f2f7;
+    color: #007aff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+</style>
+
+
+<!-- ==========================================
+  3. 動かす仕組み（JavaScript）
+=========================================== -->
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const installBtn = document.getElementById('pwaInstallBtn');
+    const iosGuide = document.getElementById('iosInstallGuide');
+    const iosCloseBtn = document.getElementById('iosGuideCloseBtn');
+    
+    let deferredPrompt;
+
+    // ----------------------------------------
+    // A. Android / PC の処理
+    // ----------------------------------------
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault(); // 標準バナーを消す
+      deferredPrompt = e;  // イベントを保存
+      installBtn.style.display = 'block'; // ボタンを表示
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt(); // 画面を出す
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`ユーザーの選択: ${outcome}`);
+      deferredPrompt = null;
+      installBtn.style.display = 'none'; // ボタンを隠す
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('インストール完了');
+    });
+
+    // ----------------------------------------
+    // B. iPhone (iOS) の処理
+    // ----------------------------------------
+    const ua = window.navigator.userAgent.toLowerCase();
+    const isIos = ua.includes('iphone') || ua.includes('ipad');
+    
+    // すでにホーム画面から起動しているかチェック
+    const isStandalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+
+    // 「一度閉じるボタンを押したか」をブラウザに記憶させる（何度も出ると邪魔なため）
+    const isGuideClosed = localStorage.getItem('pwaIosGuideClosed');
+
+    // iOS かつ、まだアプリ化されておらず、過去に閉じていない場合
+    if (isIos && !isStandalone && !isGuideClosed) {
+      iosGuide.style.display = 'block';
+    }
+
+    // 閉じるボタンが押されたら非表示にして、記憶する
+    iosCloseBtn.addEventListener('click', () => {
+      iosGuide.style.display = 'none';
+      localStorage.setItem('pwaIosGuideClosed', 'true'); // 記憶
+    });
+  });
+</script>
+
 
         <!-- [ミッション] -->
         <section class="card" id="mission">
